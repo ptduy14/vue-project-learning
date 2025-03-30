@@ -1,18 +1,27 @@
 <script lang="ts" setup>
-    import TodoItem from './TodoItem.vue';
-    import { defineProps } from 'vue';
-    
-    const { todos, isLoading} = defineProps(['todos', 'isLoading']);
+import type { ITodo } from '@/interfaces/ITodo'
+import TodoItem from './TodoItem.vue'
+import { defineProps } from 'vue'
+
+const { todosFiltered, isFetching } = defineProps<{
+  todosFiltered: ITodo[] | undefined
+  isFetching: boolean
+}>()
+
+const emit = defineEmits(['update-todo'])
 </script>
 
 <template>
-    <div v-if="isLoading">Loading</div>
-    <div v-else-if="!todos">Cannot fetching to do list</div>
-    <ul v-else>
-        <TodoItem v-for="todo in todos" :key="todo.id" :todo="todo" />
-    </ul>
+  <div v-if="isFetching">Loading</div>
+  <div v-else-if="!todosFiltered">Cannot fetch to-do list</div>
+  <ul v-else>
+    <TodoItem
+      v-for="todo in todosFiltered"
+      :key="todo.id"
+      :todo="todo"
+      @click="() => emit('update-todo', todo.id)"
+    />
+  </ul>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>
