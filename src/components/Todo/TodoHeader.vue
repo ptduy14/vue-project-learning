@@ -1,10 +1,22 @@
 <script lang="ts" setup>
-const inputValue = defineModel('inputValue')
-const selectedLimit = defineModel('selectedLimit')
-const { isAdding } = defineProps<{
-  isAdding: boolean
+import { ref, watch } from 'vue'
+
+const inputValue = ref<string>('')
+const selectedLimit = ref<number>(5)
+const { isAdding, fetchTodos } = defineProps<{
+  isAdding: boolean,
+  fetchTodos: (val: number) => Promise<void>
 }>()
 const emit = defineEmits(['add-todo'])
+
+watch(
+  () => selectedLimit.value,
+  (newVal: number) => {
+    console.log('selectedLimit: ', newVal)
+    fetchTodos(newVal)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -12,7 +24,7 @@ const emit = defineEmits(['add-todo'])
     <h1>To do list</h1>
     <input type="text" placeholder="Add a new task" v-model="inputValue" />
     <div class="action-container">
-      <button @click="() => emit('add-todo')" :disabled="isAdding">
+      <button @click="() => emit('add-todo', inputValue)" :disabled="isAdding">
         {{ isAdding ? 'Adding' : 'Add' }}
       </button>
       <select name="selected-limit" v-model="selectedLimit">

@@ -4,15 +4,13 @@ import { ref, watch, computed, reactive } from 'vue'
 import TodoHeader from './TodoHeader.vue'
 import TodoList from './TodoList.vue'
 import TodoFooter from './TodoFooter.vue'
-import { type ITodo } from '@/interfaces/ITodo'
+import type { ITodo } from '@/interfaces/ITodo'
 import type { INumOfTodo } from '@/interfaces/INumOfTodo'
 import { todoService } from '@/services/todo-service'
-import type { IStatus } from '@/interfaces/Istatus'
+import type { IStatus } from '@/interfaces/IStatus'
 
 const todos = ref<ITodo[] | undefined>(undefined)
-const selectedLimit = ref<number>(5)
 const errorMessage = ref<string>('')
-const inputValue = ref<string>('')
 const status = reactive<IStatus>({
   isAdding: false,
   isUpdating: false,
@@ -33,20 +31,20 @@ const fetchTodos = async (selectedLimit: number) => {
   }
 }
 
-const addTodo = async () => {
-  if (!inputValue.value.trim()) {
+const addTodo = async (inputValue: string) => {
+  if (!inputValue.trim()) {
     return
   }
 
   try {
     status.isAdding = true
 
-    const newTodo = await todoService.addTodo(inputValue.value)
+    const newTodo = await todoService.addTodo(inputValue)
     todos.value = [...todos.value!, newTodo]
   } catch (error: any) {
     console.log(error.message)
   } finally {
-    inputValue.value = ''
+    inputValue = ''
     status.isAdding = false
   }
 }
@@ -83,24 +81,14 @@ const updateTodo = async (todoId: number) => {
     status.isUpdating = false
   }
 }
-
-watch(
-  () => selectedLimit.value,
-  (newVal: number) => {
-    console.log('selectedLimit: ', newVal)
-    fetchTodos(newVal)
-  },
-  { immediate: true },
-)
 </script>
 
 <template>
   <div class="container">
     <TodoHeader
-      v-model:input-value="inputValue"
-      v-model:selected-limit="selectedLimit"
       :is-adding="status.isAdding"
-      @add-todo="addTodo"
+      :fetch-todos="fetchTodos"
+      @add-todo="(val) => addTodo(val)"
     />
     <TodoList
       :todos-filtered="todosFiltered"
