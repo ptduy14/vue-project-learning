@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, watch } from 'vue'
+import { ref, watch, type Ref } from 'vue'
 
 const inputValue = ref<string>('')
 const selectedLimit = ref<number>(5)
@@ -12,7 +12,6 @@ const emit = defineEmits(['add-todo'])
 watch(
   () => selectedLimit.value,
   (newVal: number) => {
-    console.log('selectedLimit: ', newVal)
     fetchTodos(newVal)
   },
   { immediate: true },

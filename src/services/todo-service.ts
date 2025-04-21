@@ -1,16 +1,35 @@
-export const todoService = {
-  fetchTodos: async (selectedLimit: number) => {
-    const res = await fetch(`https://dummyjson.com/todos?limit=${selectedLimit}&skip=10`)
-    
-    if (!res.ok) {
-        throw new Error(`Failed to fetch todos. Status: ${res.status}`)
-      }
-    
-    return res.json()
-  },
+import type { ITodo } from '@/interfaces'
+import type { TUpdatePayload } from '@/interfaces/ITodo'
 
-  addTodo: async (todo: string) => {
-    const res = await fetch('https://dummyjson.com/todos/add', {
+// temporary declaration interface
+interface IFetchTodosResponse extends ITodo {
+  todos: ITodo[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+class TodoService {
+  private domain: string
+
+  constructor(domain: string = 'https://dummyjson.com') {
+    this.domain = domain
+  }
+  
+
+  async fetchTodos(selectedLimit: number): Promise<IFetchTodosResponse> {
+    const res = await fetch(`${this.domain}/todos?limit=${selectedLimit}&skip=10`)
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch todos. Status: ${res.status}`)
+    }
+
+    const data: IFetchTodosResponse = await res.json();
+    return data;
+  }
+
+  async addTodo(todo: string): Promise<ITodo> {
+    const res = await fetch(`${this.domain}/todos/add`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -21,16 +40,17 @@ export const todoService = {
     })
 
     if (!res.ok) {
-        throw new Error(`Failed to add todo. Status: ${res.status}`)
-      }
+      throw new Error(`Failed to add todo. Status: ${res.status}`)
+    }
 
-    return res.json()
-  },
+    const data: ITodo = await res.json()
+    return data;
+  }
 
-  updateTodo: async (todoId: number, completed: boolean) => {
-    const res = await fetch(`https://dummyjson.com/todos/${todoId}`, {
+  async updateTodo(todoId: number, payload: TUpdatePayload): Promise<ITodo> {
+    const res = await fetch(`${this.domain}/todos/${todoId}`, {
       method: 'PUT',
-      body: JSON.stringify({ completed }),
+      body: JSON.stringify({ completed: !payload.completed }),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -40,6 +60,22 @@ export const todoService = {
       throw new Error(`Failed to update todo. Status: ${res.status}`)
     }
 
-    return await res.json()
-  },
+    const data: ITodo = await res.json()
+    return data;
+  }
+
+  async deleteTodo(todoId: number): Promise<ITodo> {
+    const res = await fetch(`${this.domain}/todos/${todoId}`, {
+      method: 'DELETE',
+    })
+
+    if (!res.ok) {
+      throw new Error(`Failed to delete todo. Status: ${res.status}`)
+    }
+
+    const data: ITodo = await res.json()
+    return data;
+  }
 }
+
+export const todoService = new TodoService()

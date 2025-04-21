@@ -1,100 +1,84 @@
 <script lang="ts" setup>
-import { ref, watch, computed, reactive } from 'vue'
-
+import { computed, ref } from 'vue'
 import TodoHeader from './TodoHeader.vue'
 import TodoList from './TodoList.vue'
 import TodoFooter from './TodoFooter.vue'
-import type { ITodo } from '@/interfaces/ITodo'
 import type { INumOfTodo } from '@/interfaces/INumOfTodo'
-import { todoService } from '@/services/todo-service'
-import type { IStatus } from '@/interfaces/IStatus'
+import { useFetchTodos, useAddTodo, useUpdateTodo, useDeleteTodo } from '@/composables'
+import { addTodo, updateTodo, deleteTodo ,findIndex, filterRemainTodos, calculatorNumberOfTodo } from '@/utils/todo-func-core'
 
-const todos = ref<ITodo[] | undefined>(undefined)
-const errorMessage = ref<string>('')
-const status = reactive<IStatus>({
-  isAdding: false,
-  isUpdating: false,
-  isFetching: false,
+import type { ITodo } from '@/interfaces'
+
+const todos = ref<ITodo[] | undefined>();
+
+// fetch todos composable
+const { isLoading: isFetching, fetchTodos, errMsg: fetchErrorMsg } = useFetchTodos((data: ITodo[]) => {
+  todos.value = data
 })
 
-const fetchTodos = async (selectedLimit: number) => {
-  try {
-    status.isFetching = true
+// add todo composable
+const { addTodo: addTodoAPI, isLoading: isAdding, errMsg: addErrorMsg } = useAddTodo((newTodo: ITodo) => {
+  todos.value = addTodo(todos.value, newTodo!)
+})
 
-    const res = await todoService.fetchTodos(selectedLimit)
-    todos.value = res.todos
-  } catch (error: any) {
-    errorMessage.value = error.message
-    console.log(errorMessage.value)
-  } finally {
-    status.isFetching = false
+// update todo composable
+const { updateTodo: updateTodoAPI, isLoading: isUpdating } = useUpdateTodo((updatedTodo: ITodo) => {
+  todos.value = updateTodo(todos.value!, updatedTodo)
+})
+
+// delete todo composable
+const { deleteTodo: deleteTodoAPI, isLoading: isDeleting, errMsg: deleteErrorMsg } = useDeleteTodo((deletedTodo: ITodo) => {
+  todos.value = deleteTodo(todos.value!, deletedTodo);
+})
+
+
+const handleAddTodo = (val: string) => {
+  if (!val.trim()) {
+    return;
   }
+  
+  addTodoAPI(val);
 }
 
-const addTodo = async (inputValue: string) => {
-  if (!inputValue.trim()) {
+const handleUpdateTodo = (todoId: number) => {
+  if (isUpdating.value || todosFiltered.value === undefined) {
     return
   }
 
-  try {
-    status.isAdding = true
+  const index = findIndex(todosFiltered.value, todoId);
+  const updateTodo = todosFiltered.value[index];
+  const {id, ...payload} = updateTodo;
 
-    const newTodo = await todoService.addTodo(inputValue)
-    todos.value = [...todos.value!, newTodo]
-  } catch (error: any) {
-    console.log(error.message)
-  } finally {
-    inputValue = ''
-    status.isAdding = false
-  }
+  updateTodoAPI(id, payload)
 }
 
-const todosFiltered = computed(() => {
-  return todos.value?.filter((todo: ITodo) => !todo.deleted)
-})
-
-const numOfTodo = computed<INumOfTodo>(() => {
-  if (!todosFiltered.value) {
-    return { total: 0, completed: 0, remain: 0 }
+const handleDeleteTodo = (event: any, todoId: number) => {
+  event.stopPropagation();
+  
+  if (isDeleting.value || todosFiltered.value === undefined) {
+    return
   }
 
-  let total = todosFiltered.value.length
-  let todoCompleted = todosFiltered.value.filter((todo) => todo.completed).length
-  let todoRemain = total - todoCompleted
-
-  return { total, completed: todoCompleted, remain: todoRemain }
-})
-
-const updateTodo = async (todoId: number) => {
-  try {
-    status.isUpdating = true
-
-    const index = todosFiltered.value?.findIndex((todo: ITodo) => todo.id === todoId)
-    if (index === undefined || index === -1) return
-
-    const todoUpdated = await todoService.updateTodo(todoId, !todosFiltered.value![index].completed)
-
-    todos.value![index].completed = todoUpdated.completed
-  } catch (error: any) {
-    console.log(error.message)
-  } finally {
-    status.isUpdating = false
-  }
+  deleteTodoAPI(todoId);
 }
+
+const todosFiltered = computed(() => filterRemainTodos(todos.value))
+
+const numOfTodo = computed<INumOfTodo>(() => calculatorNumberOfTodo(todos.value))
 </script>
 
 <template>
   <div class="container">
-    <TodoHeader
-      :is-adding="status.isAdding"
-      :fetch-todos="fetchTodos"
-      @add-todo="(val) => addTodo(val)"
-    />
+    <TodoHeader :is-adding="isAdding" :fetch-todos="fetchTodos" @add-todo="handleAddTodo" />
+
     <TodoList
       :todos-filtered="todosFiltered"
-      :is-fetching="status.isFetching"
-      @update-todo="(todoId: number) => updateTodo(todoId)"
+      :is-fetching="isFetching"
+      :fetch-error-msg="fetchErrorMsg"
+      @update-todo="handleUpdateTodo"
+      @delete-todo="handleDeleteTodo"
     />
+
     <TodoFooter :num-of-todo="numOfTodo" />
   </div>
 </template>
