@@ -24,8 +24,10 @@ export function useDeleteTodo(successHandler: TSuccessHandler): IUseDeleteTodo {
       const deletedTodo = await todoService.deleteTodo(todoId);
       successHandler(deletedTodo);
     } catch (error: any) {
-      errMsg.value = error.message
-      console.log(error.message)
+      if (error instanceof Error) {
+        errMsg.value = error.message
+        console.log(errMsg.value);
+      }
     } finally {
       isLoading.value = false
     }

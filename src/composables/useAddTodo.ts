@@ -17,12 +17,14 @@ export function useAddTodo(successHandler: TSuccessHandler): IUseAddTodo {
   const addTodo = async (todoName: string): Promise<void> => {
     try {
       isLoading.value = true
-
+      
       const newTodo = await todoService.addTodo(todoName)
       successHandler(newTodo);
-    } catch (error: any) {
-      errMsg.value = error.message
-      console.log(errMsg.value);
+    } catch (error) {
+      if (error instanceof Error) {
+        errMsg.value = error.message
+        console.log(errMsg.value);
+      }      
     } finally {
       isLoading.value = false
     }

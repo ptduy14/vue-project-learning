@@ -21,8 +21,10 @@ export function useFetchTodos(successHandler: TSuccessHandler): IUseFetchTodos {
       const res = await todoService.fetchTodos(selectedLimit);
       successHandler(res.todos);
     } catch (error: any) {
-      errMsg.value = error.message;
-      console.log(errMsg);
+      if (error instanceof Error) {
+        errMsg.value = error.message
+        console.log(errMsg.value);
+      }
     } finally {
       isLoading.value = false
     }

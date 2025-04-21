@@ -18,12 +18,14 @@ export function useUpdateTodo(successHandler: TSuccessHandler): IUseUpdateTodo {
     const updateTodo = async (id: number, payload: TUpdatePayload) => {
         try {
             isLoading.value = true;
-
+            
             const updatedTodo = await todoService.updateTodo(id, payload);
             successHandler(updatedTodo);
         } catch (error: any) {
-            errMsg.value = error.message;
-            console.log(error.message)
+            if (error instanceof Error) {
+                errMsg.value = error.message
+                console.log(errMsg.value);
+            }
         } finally {
             isLoading.value = false;
         }

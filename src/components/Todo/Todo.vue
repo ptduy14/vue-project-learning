@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import TodoHeader from './TodoHeader.vue'
 import TodoList from './TodoList.vue'
 import TodoFooter from './TodoFooter.vue'
+import TodoMessage from './TodoMessage.vue'
 import type { INumOfTodo } from '@/interfaces/INumOfTodo'
 import { useFetchTodos, useAddTodo, useUpdateTodo, useDeleteTodo } from '@/composables'
 import { addTodo, updateTodo, deleteTodo ,findIndex, filterRemainTodos, calculatorNumberOfTodo } from '@/utils/todo-func-core'
@@ -22,7 +23,7 @@ const { addTodo: addTodoAPI, isLoading: isAdding, errMsg: addErrorMsg } = useAdd
 })
 
 // update todo composable
-const { updateTodo: updateTodoAPI, isLoading: isUpdating } = useUpdateTodo((updatedTodo: ITodo) => {
+const { updateTodo: updateTodoAPI, isLoading: isUpdating, errMsg: updateErrorMsg } = useUpdateTodo((updatedTodo: ITodo) => {
   todos.value = updateTodo(todos.value!, updatedTodo)
 })
 
@@ -37,6 +38,8 @@ const handleAddTodo = (val: string) => {
     return;
   }
   
+  clearErrorMessages();
+
   addTodoAPI(val);
 }
 
@@ -44,6 +47,8 @@ const handleUpdateTodo = (todoId: number) => {
   if (isUpdating.value || todosFiltered.value === undefined) {
     return
   }
+
+  clearErrorMessages();
 
   const index = findIndex(todosFiltered.value, todoId);
   const updateTodo = todosFiltered.value[index];
@@ -59,18 +64,27 @@ const handleDeleteTodo = (event: any, todoId: number) => {
     return
   }
 
+  clearErrorMessages();
+
   deleteTodoAPI(todoId);
 }
 
 const todosFiltered = computed(() => filterRemainTodos(todos.value))
 
 const numOfTodo = computed<INumOfTodo>(() => calculatorNumberOfTodo(todos.value))
+
+const clearErrorMessages = () => {
+  addErrorMsg.value = undefined;
+  updateErrorMsg.value = undefined;
+  deleteErrorMsg.value = undefined;
+};
+
 </script>
 
 <template>
   <div class="container">
     <TodoHeader :is-adding="isAdding" :fetch-todos="fetchTodos" @add-todo="handleAddTodo" />
-
+    <TodoMessage :add-error-msg="addErrorMsg" :update-error-msg="updateErrorMsg" :delete-error-msg="deleteErrorMsg"/>
     <TodoList
       :todos-filtered="todosFiltered"
       :is-fetching="isFetching"
